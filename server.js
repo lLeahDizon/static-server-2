@@ -41,12 +41,30 @@ var server = http.createServer(function (request, response) {
         response.end(`{"errorCode": 4001}`);
       } else {
         response.statusCode = 200;
+        response.setHeader("Set-Cookie", `user_id=${user.id}; HttpOnly`);
         response.end();
       }
     });
   } else if (path === "/home.html") {
-    // 写不出来
-    response.end("home");
+    const cookie = request.headers["cookie"];
+    let userId;
+    try {
+      userId = cookie
+        .split(";")
+        .filter((s) => s.indexOf("user_id=") >= 0)[0]
+        .split("=")[1];
+    } catch (error) {}
+
+    if (userId) {
+      const homeHtml = fs.readFileSync("./public/home.html").toString();
+      const string = homeHtml.replace("{{loginStatus}}", "已登录");
+      response.write(string);
+    } else {
+      const homeHtml = fs.readFileSync("./public/home.html").toString();
+      const string = homeHtml.replace("{{loginStatus}}", "未登录");
+      response.write(string);
+    }
+    response.end();
   } else if (path === "/register" && method === "POST") {
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     const userArray = JSON.parse(fs.readFileSync("./db/users.json"));
