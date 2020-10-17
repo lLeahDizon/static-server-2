@@ -42,7 +42,6 @@ var server = http.createServer(function (request, response) {
       } else {
         response.statusCode = 200;
         response.setHeader("Set-Cookie", `user_id=${user.id}; HttpOnly`);
-        response.end();
       }
     });
   } else if (path === "/home.html") {
@@ -56,15 +55,28 @@ var server = http.createServer(function (request, response) {
     } catch (error) {}
 
     if (userId) {
+      const userArray = JSON.parse(fs.readFileSync("./db/users.json"));
+      const user = userArray.find((user) => user.id.toString() === userId);
       const homeHtml = fs.readFileSync("./public/home.html").toString();
-      const string = homeHtml.replace("{{loginStatus}}", "已登录");
+      let string;
+      if (user) {
+        string = homeHtml
+          .replace("{{loginStatus}}", "已登录")
+          .replace("{{user.name}}", user.name);
+      } else {
+        string = homeHtml
+          .replace("{{loginStatus}}", "未登录")
+          .replace("{{user.name}}", "");
+      }
+
       response.write(string);
     } else {
       const homeHtml = fs.readFileSync("./public/home.html").toString();
-      const string = homeHtml.replace("{{loginStatus}}", "未登录");
+      const string = homeHtml
+        .replace("{{loginStatus}}", "未登录")
+        .replace("{{user.name}}", "");
       response.write(string);
     }
-    response.end();
   } else if (path === "/register" && method === "POST") {
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     const userArray = JSON.parse(fs.readFileSync("./db/users.json"));
@@ -86,7 +98,6 @@ var server = http.createServer(function (request, response) {
       };
       userArray.push(newUser);
       fs.writeFileSync("./db/users.json", JSON.stringify(userArray));
-      response.end();
     });
   } else {
     response.statusCode = 200;
@@ -115,8 +126,8 @@ var server = http.createServer(function (request, response) {
     }
 
     response.write(content);
-    response.end();
   }
+  response.end();
   /******** 代码结束，下面不要看 ************/
 });
 
